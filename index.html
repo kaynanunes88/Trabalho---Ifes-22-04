@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Vacinação ES</title>
+    
+    <!-- Fontes Modernas -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS (via CDN para styling sem build) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: { polio: '#14b8a6', triplice: '#6366f1', bcg: '#f43f5e', meta: '#eab308' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Chart.js para Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse para ler o CSV de forma performática -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Phosphor Icons para iconografia elegante -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        /* Ajustes finos de UI/UX */
+        body { background-color: #0f172a; color: #f8fafc; }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 1rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        /* Estilização do input datalist */
+        input::-webkit-calendar-picker-indicator {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- HEADER & FILTRO -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-white flex items-center gap-2">
+                    <i class="ph ph-shield-check text-brand-polio"></i> Monitor de Vacinação
+                </h1>
+                <p class="text-slate-400 text-sm mt-1">Dados de cobertura vacinal no Espírito Santo</p>
+            </div>
+            
+            <div class="w-full md:w-72 relative">
+                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                <input 
+                    type="text" 
+                    id="cityInput" 
+                    list="cityList"
+                    placeholder="Buscar cidade..." 
+                    class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-lg focus:ring-brand-polio focus:border-brand-polio block pl-10 p-3 outline-none transition-colors"
+                >
+                <datalist id="cityList"></datalist>
+            </div>
+        </header>
+
+        <!-- KPI CARDS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- População -->
+            <div class="glass-card p-6 flex flex-col justify-center relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 opacity-5"><i class="ph-fill ph-users text-8xl"></i></div>
+                <h3 class="text-slate-400 text-sm font-medium mb-1">População (2022)</h3>
+                <p class="text-3xl font-bold text-white" id="kpi-pop">--</p>
+                <p class="text-xs text-slate-500 mt-2" id="kpi-region">--</p>
+            </div>
+            <!-- Polio -->
+            <div class="glass-card p-6 flex flex-col justify-center">
+                <h3 class="text-slate-400 text-sm font-medium mb-1 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-brand-polio"></span> Polio (2022)
+                </h3>
+                <div class="flex items-end gap-2">
+                    <p class="text-3xl font-bold text-white" id="kpi-polio">--%</p>
+                    <span class="text-xs font-medium px-2 py-1 rounded bg-slate-700 text-slate-300 mb-1" id="kpi-polio-status">Meta: 95%</span>
+                </div>
+            </div>
+            <!-- Tríplice -->
+            <div class="glass-card p-6 flex flex-col justify-center">
+                <h3 class="text-slate-400 text-sm font-medium mb-1 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-brand-triplice"></span> Tríplice Viral (2022)
+                </h3>
+                <div class="flex items-end gap-2">
+                    <p class="text-3xl font-bold text-white" id="kpi-triplice">--%</p>
+                    <span class="text-xs font-medium px-2 py-1 rounded bg-slate-700 text-slate-300 mb-1" id="kpi-triplice-status">Meta: 95%</span>
+                </div>
+            </div>
+            <!-- BCG -->
+            <div class="glass-card p-6 flex flex-col justify-center">
+                <h3 class="text-slate-400 text-sm font-medium mb-1 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-brand-bcg"></span> BCG (2022)
+                </h3>
+                <div class="flex items-end gap-2">
+                    <p class="text-3xl font-bold text-white" id="kpi-bcg">--%</p>
+                    <span class="text-xs font-medium px-2 py-1 rounded bg-slate-700 text-slate-300 mb-1" id="kpi-bcg-status">Meta: 95%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHARTS SECTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Evolução Temporal -->
+            <div class="glass-card p-6">
+                <h3 class="text-lg font-semibold mb-4 text-white">Evolução Temporal (2019 - 2022)</h3>
+                <div class="relative h-72 w-full">
+                    <canvas id="evolutionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Comparativo Cenário 2022 -->
+            <div class="glass-card p-6">
+                <h3 class="text-lg font-semibold mb-4 text-white">Cenário Atual (2022) vs Meta</h3>
+                <div class="relative h-72 w-full">
+                    <canvas id="currentYearChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- LOGICA DA APLICAÇÃO (JS) -->
+    <script>
+        /* * 1. PARSING E PREPARAÇÃO DOS DADOS
+         * Inseri o CSV fornecido diretamente como string para a aplicação rodar 100% no navegador sem problemas de CORS.
+         * Em um sistema real com backend, você substituiria isso por um fetch('/api/dados.csv')
+         */
+        const rawCSV = `municipio,regiao_saude,populacao_2022,polio_2019,polio_2020,polio_2021,polio_2022,triplice_viral_2019,triplice_viral_2020,triplice_viral_2021,triplice_viral_2022,bcg_2022,meta_cobertura_pct
+Afonso Cláudio,Metropolitana,30603,91.4,72.8,73.3,73.7,98.9,80.2,78.5,87.4,95.9,95
+Alegre,Sul,31403,87.3,87.3,74.5,56.8,95.6,81.6,83.8,82.6,97.5,95
+Alto Rio Novo,Central Norte,7831,83.5,69.3,68.2,72.8,87.2,82.2,82.2,81.1,87.6,95
+Anchieta,Sul,26703,,75.0,81.4,62.9,94.7,77.7,71.6,90.8,89.1,95
+Apiacá,Sul,8203,87.5,73.2,77.5,60.1,85.2,70.1,80.1,75.1,88.2,95
+Ponto Belo,Central Norte,8904,86.7,73.3,65.0,63.6,82.4,66.1,72.4,84.7,84.4,95
+Presidente Kennedy,Sul,11203,86.4,78.4,66.7,66.3,88.8,76.4,72.3,86.6,82.3,95
+Rio Novo do Sul,Sul,12603,81.8,76.0,79.9,,87.6,79.8,80.2,83.4,83.9,95
+Santa Leopoldina,Metropolitana,13076,92.6,83.7,78.5,71.3,87.0,69.3,77.6,80.6,91.0,95
+Santa Maria de Jetibá,Metropolitana,40242,90.7,81.1,78.5,56.6,86.4,71.0,77.9,85.9,93.6,95
+Santa Teresa,Metropolitana,24390,94.7,70.7,68.2,71.1,88.1,75.2,71.2,82.1,89.5,95
+Vitória,Metropolitana,322869,89.5,80.1,75.4,72.1,91.2,85.4,80.1,88.5,94.2,95`; // Adicionei Vitória como ex.
+
+        let appData = [];
+        let stateAverages = {};
+        
+        // Instâncias dos gráficos para podermos atualizá-los
+        let evolutionChartInstance = null;
+        let currentYearChartInstance = null;
+
+        // Configurações globais do Chart.js para Dark Mode
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = 'Inter';
+        Chart.defaults.scale.grid.color = 'rgba(148, 163, 184, 0.1)';
+
+        // Inicialização
+        function init() {
+            Papa.parse(rawCSV, {
+                header: true,
+                dynamicTyping: true, // Converte números automaticamente
+                skipEmptyLines: true,
+                complete: function(results) {
+                    appData = results.data;
+                    calculateStateAverages();
+                    populateDatalist();
+                    
+                    // Iniciar com a visão geral do Estado
+                    updateDashboard('Estado (Visão Geral)');
+                    
+                    // Event Listener para a barra de busca
+                    document.getElementById('cityInput').addEventListener('change', (e) => {
+                        const city = e.target.value;
+                        if(city === '' || appData.some(d => d.municipio === city)) {
+                            updateDashboard(city === '' ? 'Estado (Visão Geral)' : city);
+                        }
+                    });
+                }
+            });
+        }
+
+        /* * 2. REGRAS DE NEGÓCIO E CÁLCULOS
+         */
+        function calculateStateAverages() {
+            const metrics = ['populacao_2022', 'polio_2019', 'polio_2020', 'polio_2021', 'polio_2022', 
+                           'triplice_viral_2019', 'triplice_viral_2020', 'triplice_viral_2021', 'triplice_viral_2022', 'bcg_2022'];
+            
+            metrics.forEach(metric => {
+                let sum = 0;
+                let count = 0;
+                appData.forEach(row => {
+                    if (row[metric] !== null && row[metric] !== undefined && row[metric] !== '') {
+                        sum += row[metric];
+                        count++;
+                    }
+                });
+                // Para população somamos, para % fazemos média
+                stateAverages[metric] = metric === 'populacao_2022' ? sum : (sum / count).toFixed(1);
+            });
+            stateAverages.municipio = 'Estado (Visão Geral)';
+            stateAverages.regiao_saude = 'Todas as Regiões';
+            stateAverages.meta_cobertura_pct = 95;
+        }
+
+        function populateDatalist() {
+            const datalist = document.getElementById('cityList');
+            appData.sort((a,b) => a.municipio.localeCompare(b.municipio)).forEach(city => {
+                const option = document.createElement('option');
+                option.value = city.municipio;
+                datalist.appendChild(option);
+            });
+        }
+
+        /* * 3. ATUALIZAÇÃO DA INTERFACE (UI)
+         */
+        function updateDashboard(cityName) {
+            let dataToShow;
+            if (cityName === 'Estado (Visão Geral)') {
+                dataToShow = stateAverages;
+            } else {
+                dataToShow = appData.find(city => city.municipio === cityName);
+            }
+
+            if(!dataToShow) return;
+
+            // Atualiza KPIs
+            document.getElementById('kpi-pop').textContent = dataToShow.populacao_2022.toLocaleString('pt-BR');
+            document.getElementById('kpi-region').textContent = `Região: ${dataToShow.regiao_saude}`;
+            
+            updateKpiCard('polio', dataToShow.polio_2022);
+            updateKpiCard('triplice', dataToShow.triplice_viral_2022);
+            updateKpiCard('bcg', dataToShow.bcg_2022);
+
+            // Atualiza Gráficos
+            renderEvolutionChart(dataToShow);
+            renderCurrentYearChart(dataToShow);
+        }
+
+        function updateKpiCard(type, value) {
+            const valEl = document.getElementById(`kpi-${type}`);
+            const statusEl = document.getElementById(`kpi-${type}-status`);
+            
+            if (value == null || value === '' || isNaN(value)) {
+                valEl.textContent = 'N/D';
+                statusEl.className = "text-xs font-medium px-2 py-1 rounded bg-slate-700 text-slate-300 mb-1";
+                statusEl.textContent = "Sem dados";
+                return;
+            }
+
+            valEl.textContent = `${Number(value).toFixed(1)}%`;
+            
+            // Lógica de Cores baseada na Meta (95%)
+            if (Number(value) >= 95) {
+                statusEl.className = "text-xs font-medium px-2 py-1 rounded bg-emerald-900/50 text-emerald-400 mb-1";
+                statusEl.textContent = "Meta Atingida";
+            } else {
+                statusEl.className = "text-xs font-medium px-2 py-1 rounded bg-rose-900/50 text-rose-400 mb-1";
+                statusEl.textContent = "Abaixo da Meta";
+            }
+        }
+
+        /* * 4. RENDERIZAÇÃO DOS GRÁFICOS (Chart.js)
+         * Aqui você pode alterar cores, tipos de linha e tooltips.
+         */
+        function renderEvolutionChart(data) {
+            const ctx = document.getElementById('evolutionChart').getContext('2d');
+            
+            const years = ['2019', '2020', '2021', '2022'];
+            const polioData = [data.polio_2019, data.polio_2020, data.polio_2021, data.polio_2022];
+            const tripliceData = [data.triplice_viral_2019, data.triplice_viral_2020, data.triplice_viral_2021, data.triplice_viral_2022];
+
+            if (evolutionChartInstance) {
+                evolutionChartInstance.destroy(); // Limpa antes de redesenhar
+            }
+
+            evolutionChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [
+                        {
+                            label: 'Polio',
+                            data: polioData,
+                            borderColor: '#14b8a6', // brand.polio
+                            backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.4, // Curva suave
+                            fill: true,
+                            pointBackgroundColor: '#14b8a6',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Tríplice Viral',
+                            data: tripliceData,
+                            borderColor: '#6366f1', // brand.triplice
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#6366f1',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleColor: '#fff', padding: 12 }
+                    },
+                    scales: {
+                        y: { min: 0, max: 100, ticks: { callback: function(value) { return value + "%" } } }
+                    }
+                }
+            });
+        }
+
+        function renderCurrentYearChart(data) {
+            const ctx = document.getElementById('currentYearChart').getContext('2d');
+            
+            if (currentYearChartInstance) {
+                currentYearChartInstance.destroy();
+            }
+
+            // Plugin Customizado para desenhar a Linha da Meta
+            const targetLinePlugin = {
+                id: 'targetLine',
+                beforeDraw: chart => {
+                    const { ctx, chartArea: { top, right, bottom, left }, scales: { x, y } } = chart;
+                    ctx.save();
+                    const yPos = y.getPixelForValue(95); // 95% meta
+                    
+                    // Desenha a linha pontilhada amarela
+                    ctx.beginPath();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#eab308'; // brand.meta
+                    ctx.setLineDash([5, 5]);
+                    ctx.moveTo(left, yPos);
+                    ctx.lineTo(right, yPos);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            };
+
+            currentYearChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Pólio', 'Tríplice Viral', 'BCG'],
+                    datasets: [{
+                        label: 'Cobertura 2022 (%)',
+                        data: [data.polio_2022, data.triplice_viral_2022, data.bcg_2022],
+                        backgroundColor: ['#14b8a6', '#6366f1', '#f43f5e'],
+                        borderRadius: 6,
+                        barPercentage: 0.6
+                    }]
+                },
+                plugins: [targetLinePlugin],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', padding: 12 }
+                    },
+                    scales: {
+                        y: { 
+                            min: 0, max: 110, // Max 110 para caber o label da meta
+                            ticks: { callback: function(value) { return value + "%" } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Boot da Aplicação
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
