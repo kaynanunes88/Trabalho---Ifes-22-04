@@ -1,11 +1,22 @@
 <!DOCTYPE html>
+<html>
+  <head>
+    <title>Hello, World!</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+      <h1 class="title">Hello World!</h1>
+      <p id="currentTime"></p>
+      <script src="script.js"></script>
+  </body>
+</html><!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal de Saúde | Vacinação ES</title>
+    <title>Portal Saúde ES · Vacinação & Leitos</title>
     
-    <!-- Tipografia Limpa e Amigável (Poppins) -->
+    <!-- Tipografia Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -18,189 +29,182 @@
                 extend: {
                     fontFamily: { sans: ['Poppins', 'sans-serif'] },
                     colors: {
-                        // Paleta Pastel/Orgânica
                         health: {
-                            bg: '#F8FAFC',       // Off-white/Slate muito claro
-                            mint: '#34D399',     // Verde Menta suave (Sucesso/Pólio)
+                            bg: '#F8FAFC',
+                            mint: '#34D399',
                             mintLight: '#D1FAE5',
-                            serenity: '#60A5FA', // Azul Serenity (Tríplice)
+                            serenity: '#60A5FA',
                             serenityLight: '#DBEAFE',
-                            coral: '#FB7185',    // Coral Suave (BCG)
+                            coral: '#FB7185',
                             coralLight: '#FFE4E6',
-                            warning: '#FBBF24',  // Amarelo suave
+                            warning: '#FBBF24',
                             warningLight: '#FEF3C7',
-                            textMain: '#334155', // Slate escuro (menos agressivo que preto)
-                            textMuted: '#64748B' // Slate médio
+                            textMain: '#334155',
+                            textMuted: '#64748B'
                         }
                     },
-                    borderRadius: {
-                        '4xl': '24px' // Bordas extremamente arredondadas
-                    },
-                    boxShadow: {
-                        'soft': '0 10px 40px -10px rgba(0,0,0,0.05)' // Sombra difusa e acolhedora
-                    }
+                    borderRadius: { '4xl': '24px' },
+                    boxShadow: { 'soft': '0 10px 40px -10px rgba(0,0,0,0.05)' }
                 }
             }
         }
     </script>
 
-    <!-- Bibliotecas Externas -->
+    <!-- Bibliotecas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <style>
-        body {
-            background-color: #F8FAFC;
-            color: #334155;
-            -webkit-font-smoothing: antialiased;
-        }
-        
-        /* Ocultar seta padrão do datalist para visual mais limpo */
-        input::-webkit-calendar-picker-indicator {
-            display: none !important;
-        }
-
-        /* Efeito de hover suave nos cards */
+        body { background-color: #F8FAFC; color: #334155; -webkit-font-smoothing: antialiased; }
+        input::-webkit-calendar-picker-indicator { display: none !important; }
         .health-card {
             background-color: white;
             border-radius: 24px;
             box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        .health-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 15px 50px -10px rgba(0,0,0,0.08);
-        }
+        .health-card:hover { transform: translateY(-4px); box-shadow: 0 15px 50px -10px rgba(0,0,0,0.08); }
+        .dashboard-transition { transition: opacity 0.25s ease; }
+        .hidden-dashboard { display: none !important; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8 lg:p-10">
 
-    <div class="max-w-7xl mx-auto space-y-8">
-        
-        <!-- HEADER & BUSCA -->
-        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 md:p-8 rounded-4xl shadow-soft">
-            <div class="flex items-center gap-4">
-                <div class="w-14 h-14 rounded-full bg-health-mintLight flex items-center justify-center flex-shrink-0">
-                    <i class="ph ph-heartbeat text-3xl text-health-mint"></i>
-                </div>
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-semibold text-health-textMain">
-                        Cuidado & Prevenção
-                    </h1>
-                    <p class="text-health-textMuted text-sm md:text-base mt-1">
-                        Monitoramento da saúde infantil no Espírito Santo
-                    </p>
-                </div>
-            </div>
-            
-            <div class="w-full lg:w-96 relative group">
-                <i class="ph ph-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-health-textMuted text-lg transition-colors group-focus-within:text-health-serenity"></i>
-                <input 
-                    type="text" 
-                    id="cityInput" 
-                    list="cityList"
-                    placeholder="Busque por um município..." 
-                    class="w-full bg-slate-50 border-2 border-transparent text-health-textMain text-base rounded-3xl focus:bg-white focus:ring-4 focus:ring-health-serenityLight focus:border-health-serenity block pl-12 pr-4 py-4 outline-none transition-all duration-300 shadow-sm hover:shadow-md"
-                >
-                <datalist id="cityList"></datalist>
-            </div>
-        </header>
-
-        <!-- KPI CARDS HUMANIZADOS -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            <!-- População -->
-            <div class="health-card p-6 flex flex-col relative overflow-hidden group cursor-default">
-                <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300">
-                    <i class="ph ph-users text-2xl text-slate-500"></i>
-                </div>
-                <h3 class="text-health-textMuted text-sm font-medium mb-1">População Avaliada</h3>
-                <p class="text-3xl font-semibold text-health-textMain" id="kpi-pop">--</p>
-                <p class="text-xs text-slate-400 mt-2 flex items-center gap-1">
-                    <i class="ph ph-map-pin"></i> <span id="kpi-region">--</span>
-                </p>
-            </div>
-
-            <!-- Polio -->
-            <div class="health-card p-6 flex flex-col group cursor-default">
-                <div class="w-12 h-12 rounded-2xl bg-health-mintLight flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300">
-                    <i class="ph ph-shield-plus text-2xl text-health-mint"></i>
-                </div>
-                <h3 class="text-health-textMuted text-sm font-medium mb-1">Proteção contra Pólio</h3>
-                <div class="flex items-end gap-3 mt-1">
-                    <p class="text-3xl font-semibold text-health-textMain" id="kpi-polio">--%</p>
-                </div>
-                <div class="mt-3 inline-flex" id="kpi-polio-status">
-                    <!-- Preenchido via JS -->
-                </div>
-            </div>
-
-            <!-- Tríplice Viral -->
-            <div class="health-card p-6 flex flex-col group cursor-default">
-                <div class="w-12 h-12 rounded-2xl bg-health-serenityLight flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300">
-                    <i class="ph ph-virus text-2xl text-health-serenity"></i>
-                </div>
-                <h3 class="text-health-textMuted text-sm font-medium mb-1">Tríplice Viral</h3>
-                <div class="flex items-end gap-3 mt-1">
-                    <p class="text-3xl font-semibold text-health-textMain" id="kpi-triplice">--%</p>
-                </div>
-                <div class="mt-3 inline-flex" id="kpi-triplice-status">
-                    <!-- Preenchido via JS -->
-                </div>
-            </div>
-
-            <!-- BCG -->
-            <div class="health-card p-6 flex flex-col group cursor-default">
-                <div class="w-12 h-12 rounded-2xl bg-health-coralLight flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300">
-                    <i class="ph ph-baby text-2xl text-health-coral"></i>
-                </div>
-                <h3 class="text-health-textMuted text-sm font-medium mb-1">Vacina BCG</h3>
-                <div class="flex items-end gap-3 mt-1">
-                    <p class="text-3xl font-semibold text-health-textMain" id="kpi-bcg">--%</p>
-                </div>
-                <div class="mt-3 inline-flex" id="kpi-bcg-status">
-                    <!-- Preenchido via JS -->
-                </div>
-            </div>
+<!-- ========== LANDING PAGE ========== -->
+<div id="landing-page" class="max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[85vh]">
+    <div class="text-center mb-12">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-health-mintLight mb-6">
+            <i class="ph ph-heartbeat text-4xl text-health-mint"></i>
         </div>
-
-        <!-- CHARTS SECTION -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-4">
-            
-            <!-- Evolução Temporal -->
-            <div class="health-card p-6 md:p-8">
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h3 class="text-lg font-semibold text-health-textMain">Evolução do Cuidado</h3>
-                        <p class="text-sm text-health-textMuted">Acompanhamento histórico (2019 - 2022)</p>
-                    </div>
-                </div>
-                <div class="relative h-72 w-full">
-                    <canvas id="evolutionChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Comparativo Cenário 2022 -->
-            <div class="health-card p-6 md:p-8">
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h3 class="text-lg font-semibold text-health-textMain">Cenário Atual de Proteção</h3>
-                        <p class="text-sm text-health-textMuted">Cobertura em 2022 comparada à meta de segurança</p>
-                    </div>
-                </div>
-                <div class="relative h-72 w-full">
-                    <canvas id="currentYearChart"></canvas>
-                </div>
-            </div>
-
-        </div>
+        <h1 class="text-4xl md:text-5xl font-semibold text-health-textMain tracking-tight">
+            Portal de Saúde · ES
+        </h1>
+        <p class="text-health-textMuted text-lg mt-3 max-w-xl mx-auto">
+            Acompanhamento integrado de vacinação infantil e oferta de leitos hospitalares
+        </p>
     </div>
 
-    <!-- LÓGICA DE DADOS E INTERAÇÃO -->
-    <script>
-        // Dados do CSV embutidos para funcionamento imediato
-        const rawCSV = `municipio,regiao_saude,populacao_2022,polio_2019,polio_2020,polio_2021,polio_2022,triplice_viral_2019,triplice_viral_2020,triplice_viral_2021,triplice_viral_2022,bcg_2022,meta_cobertura_pct
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+        <!-- Card Vacinação -->
+        <div id="go-to-vaccination" class="health-card p-8 flex flex-col items-center text-center cursor-pointer group hover:shadow-xl transition-all duration-300 border border-transparent hover:border-health-mintLight/50">
+            <div class="w-20 h-20 rounded-2xl bg-health-mintLight flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
+                <i class="ph ph-syringe text-4xl text-health-mint"></i>
+            </div>
+            <h2 class="text-2xl font-semibold text-health-textMain mb-2">Painel de Vacinação</h2>
+            <p class="text-health-textMuted mb-6">Cobertura de Pólio, Tríplice Viral e BCG · Evolução 2019–2022</p>
+            <span class="inline-flex items-center gap-2 text-health-serenity font-medium text-sm mt-2">
+                Acessar painel <i class="ph ph-arrow-right"></i>
+            </span>
+        </div>
+
+        <!-- Card Leitos -->
+        <div id="go-to-beds" class="health-card p-8 flex flex-col items-center text-center cursor-pointer group hover:shadow-xl transition-all duration-300 border border-transparent hover:border-health-serenityLight/50">
+            <div class="w-20 h-20 rounded-2xl bg-health-serenityLight flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
+                <i class="ph ph-bed text-4xl text-health-serenity"></i>
+            </div>
+            <h2 class="text-2xl font-semibold text-health-textMain mb-2">Gestão de Leitos</h2>
+            <p class="text-health-textMuted mb-6">Leitos SUS, total e indicadores por mil habitantes · Referência OMS</p>
+            <span class="inline-flex items-center gap-2 text-health-serenity font-medium text-sm mt-2">
+                Acessar painel <i class="ph ph-arrow-right"></i>
+            </span>
+        </div>
+    </div>
+    <p class="text-xs text-health-textMuted mt-12 flex items-center gap-1"><i class="ph ph-info"></i> Dados públicos · Atualização 2022/2023</p>
+</div>
+
+<!-- ========== DASHBOARD VACINAÇÃO (view original adaptada) ========== -->
+<div id="vaccination-dashboard" class="max-w-7xl mx-auto space-y-8 hidden-dashboard dashboard-transition">
+    <!-- Botão voltar -->
+    <div class="flex justify-start">
+        <button id="back-from-vaccination" class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white shadow-soft text-health-textMuted hover:text-health-serenity transition-all">
+            <i class="ph ph-house"></i> <span>Início</span>
+        </button>
+    </div>
+
+    <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 md:p-8 rounded-4xl shadow-soft">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-full bg-health-mintLight flex items-center justify-center flex-shrink-0">
+                <i class="ph ph-heartbeat text-3xl text-health-mint"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-semibold text-health-textMain">Cuidado & Prevenção</h1>
+                <p class="text-health-textMuted text-sm md:text-base mt-1">Monitoramento da saúde infantil no Espírito Santo</p>
+            </div>
+        </div>
+        <div class="w-full lg:w-96 relative group">
+            <i class="ph ph-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-health-textMuted text-lg"></i>
+            <input type="text" id="cityInputVax" list="cityListVax" placeholder="Busque por um município..." 
+                class="w-full bg-slate-50 border-2 border-transparent rounded-3xl focus:bg-white focus:ring-4 focus:ring-health-serenityLight focus:border-health-serenity pl-12 pr-4 py-4 outline-none transition-all shadow-sm">
+            <datalist id="cityListVax"></datalist>
+        </div>
+    </header>
+
+    <!-- KPIs Vacinação (dinâmicos) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="health-card p-6"><div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mb-4"><i class="ph ph-users text-2xl text-slate-500"></i></div><h3 class="text-health-textMuted text-sm mb-1">População Avaliada</h3><p class="text-3xl font-semibold" id="kpi-pop">--</p><p class="text-xs text-slate-400 mt-2"><i class="ph ph-map-pin"></i> <span id="kpi-region">--</span></p></div>
+        <div class="health-card p-6"><div class="w-12 h-12 rounded-2xl bg-health-mintLight flex items-center justify-center mb-4"><i class="ph ph-shield-plus text-2xl text-health-mint"></i></div><h3 class="text-health-textMuted text-sm mb-1">Proteção contra Pólio</h3><p class="text-3xl font-semibold" id="kpi-polio">--%</p><div class="mt-3" id="kpi-polio-status"></div></div>
+        <div class="health-card p-6"><div class="w-12 h-12 rounded-2xl bg-health-serenityLight flex items-center justify-center mb-4"><i class="ph ph-virus text-2xl text-health-serenity"></i></div><h3 class="text-health-textMuted text-sm mb-1">Tríplice Viral</h3><p class="text-3xl font-semibold" id="kpi-triplice">--%</p><div class="mt-3" id="kpi-triplice-status"></div></div>
+        <div class="health-card p-6"><div class="w-12 h-12 rounded-2xl bg-health-coralLight flex items-center justify-center mb-4"><i class="ph ph-baby text-2xl text-health-coral"></i></div><h3 class="text-health-textMuted text-sm mb-1">Vacina BCG</h3><p class="text-3xl font-semibold" id="kpi-bcg">--%</p><div class="mt-3" id="kpi-bcg-status"></div></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="health-card p-6 md:p-8"><h3 class="text-lg font-semibold">Evolução do Cuidado</h3><p class="text-sm text-health-textMuted mb-6">Acompanhamento histórico (2019 - 2022)</p><div class="h-72"><canvas id="evolutionChart"></canvas></div></div>
+        <div class="health-card p-6 md:p-8"><h3 class="text-lg font-semibold">Cenário Atual de Proteção</h3><p class="text-sm text-health-textMuted mb-6">Cobertura 2022 × meta de segurança</p><div class="h-72"><canvas id="currentYearChart"></canvas></div></div>
+    </div>
+</div>
+
+<!-- ========== DASHBOARD LEITOS ========== -->
+<div id="beds-dashboard" class="max-w-7xl mx-auto space-y-8 hidden-dashboard dashboard-transition">
+    <div class="flex justify-start">
+        <button id="back-from-beds" class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white shadow-soft text-health-textMuted hover:text-health-serenity transition-all">
+            <i class="ph ph-house"></i> <span>Início</span>
+        </button>
+    </div>
+
+    <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-white p-6 md:p-8 rounded-4xl shadow-soft">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-full bg-health-serenityLight flex items-center justify-center">
+                <i class="ph ph-bed text-3xl text-health-serenity"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-semibold text-health-textMain">Gestão de Leitos · ES</h1>
+                <p class="text-health-textMuted text-sm md:text-base mt-1">Leitos SUS, total e referência OMS (3 leitos/mil hab)</p>
+            </div>
+        </div>
+        <div class="w-full lg:w-96 relative group">
+            <i class="ph ph-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-health-textMuted text-lg"></i>
+            <input type="text" id="cityInputBeds" list="cityListBeds" placeholder="Busque por um município..." 
+                class="w-full bg-slate-50 border-2 border-transparent rounded-3xl focus:bg-white focus:ring-4 focus:ring-health-serenityLight focus:border-health-serenity pl-12 pr-4 py-4 outline-none transition-all shadow-sm">
+            <datalist id="cityListBeds"></datalist>
+        </div>
+    </header>
+
+    <!-- KPIs Leitos -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="health-card p-6"><div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mb-4"><i class="ph ph-hospital text-2xl text-slate-500"></i></div><h3 class="text-health-textMuted text-sm mb-1">Total de Leitos (2023)</h3><p class="text-3xl font-semibold" id="kpi-total-leitos">--</p><p class="text-xs text-slate-400 mt-2"><span id="kpi-beds-region">--</span></p></div>
+        <div class="health-card p-6"><div class="w-12 h-12 rounded-2xl bg-health-mintLight flex items-center justify-center mb-4"><i class="ph ph-activity text-2xl text-health-mint"></i></div><h3 class="text-health-textMuted text-sm mb-1">Leitos / mil hab.</h3><p class="text-3xl font-semibold" id="kpi-leitos-mil">--</p><div class="mt-3" id="kpi-leitos-status"></div></div>
+        <div class="health-card p-6"><div class="w-12 h-12 rounded-2xl bg-health-serenityLight flex items-center justify-center mb-4"><i class="ph ph-first-aid text-2xl text-health-serenity"></i></div><h3 class="text-health-textMuted text-sm mb-1">Leitos SUS (2023)</h3><p class="text-3xl font-semibold" id="kpi-sus-leitos">--</p><p class="text-xs text-slate-400 mt-2">% do total <span id="kpi-sus-percent">--</span></p></div>
+        <div class="health-card p-6"><div class="w-12 h-12 rounded-2xl bg-health-warningLight flex items-center justify-center mb-4"><i class="ph ph-trend-up text-2xl text-health-warning"></i></div><h3 class="text-health-textMuted text-sm mb-1">Evolução SUS (2019→2023)</h3><p class="text-3xl font-semibold" id="kpi-evolucao-sus">--</p><div class="mt-3" id="kpi-evolucao-status"></div></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="health-card p-6 md:p-8"><h3 class="text-lg font-semibold">Evolução de Leitos SUS</h3><p class="text-sm text-health-textMuted mb-4">2019 · 2021 · 2023</p><div class="h-72"><canvas id="bedsEvolutionChart"></canvas></div></div>
+        <div class="health-card p-6 md:p-8"><h3 class="text-lg font-semibold">Leitos por mil hab. (2023)</h3><p class="text-sm text-health-textMuted mb-4">Comparativo com meta OMS (3,0)</p><div class="h-72"><canvas id="bedsBarChart"></canvas></div></div>
+    </div>
+    <div class="health-card p-6 overflow-x-auto">
+        <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><i class="ph ph-table"></i> Municípios com menor oferta</h3>
+        <div class="text-xs text-health-textMuted mb-2">Leitos/mil hab abaixo de 1,0 (referência OMS = 3,0)</div>
+        <div id="beds-table-container"></div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        "use strict";
+
+        // ---------- DATASETS EMBUTIDOS ----------
+        const rawVaxCSV = `municipio,regiao_saude,populacao_2022,polio_2019,polio_2020,polio_2021,polio_2022,triplice_viral_2019,triplice_viral_2020,triplice_viral_2021,triplice_viral_2022,bcg_2022,meta_cobertura_pct
 Afonso Cláudio,Metropolitana,30603,91.4,72.8,73.3,73.7,98.9,80.2,78.5,87.4,95.9,95.0
 Água Doce do Norte,Central Norte,12402,91.0,69.9,70.8,54.3,85.9,77.7,72.8,81.6,88.4,95.0
 Águia Branca,Central Norte,9714,92.6,81.1,64.7,64.0,81.9,81.9,74.9,84.9,79.0,95.0
@@ -280,232 +284,314 @@ Vila Valério,Central Norte,13728,102.5,97.4,100.4,74.4,97.4,110.6,103.0,81.0,45
 Vila Velha,Metropolitana,506395,94.0,80.6,70.4,64.0,89.6,79.6,85.8,86.3,86.4,95.0
 Vitória,Metropolitana,322869,91.0,81.0,78.0,82.0,95.6,81.3,82.8,74.6,55.1,95.0`;
 
-        let appData = [];
-        let stateAverages = {};
-        let evolutionChartInstance = null;
-        let currentYearChartInstance = null;
+        const rawBedsCSV = `Município,Região de Saúde,População (2022),Leitos SUS (2019),Leitos SUS (2021),Leitos SUS (2023),Leitos Não SUS (2023),Total Leitos (2023),Leitos/Mil Hab (2023),Ref. OMS
+Afonso Cláudio,Metropolitana,30.603,44,46,45,19,64,01.01,3
+Água Doce do Norte,Central Norte,12.402,10,11,11,1,12,"0,97",3
+Águia Branca,Central Norte,9.714,7,7,10,1,11,"1,13",3
+Alegre,Sul,31.403,38,37,35,7,42,"1,34",3
+Alfredo Chaves,Sul,13.836,0,0,0,0,0,0,3
+Alto Rio Novo,Central Norte,7.831,7,7,6,0,6,"0,77",3
+Anchieta,Sul,26.703,29,29,28,5,33,"1,24",3
+Apiacá,Sul,8.203,9,7,7,2,9,31.12,3
+Aracruz,Metropolitana,108.416,166,160,159,69,228,1.1,3
+Atílio Vivácqua,Sul,12.060,10,10,11,0,11,30.12,3
+Baixo Guandu,Central Norte,29.803,28,23,27,5,32,31.12,3
+Barra de São Francisco,Central Norte,42.498,61,61,61,0,61,"1,44",3
+Boa Esperança,Central Norte,19.203,17,16,17,1,18,"0,94",3
+Bom Jesus do Norte,Sul,9.803,10,9,10,3,13,"1,33",3
+Brejetuba,Metropolitana,12.987,17,21,20,9,29,"2,23",3
+Cachoeiro de Itapemirim,Sul,185.784,354,482,20,9,29,"2,23",3
+Cariacica,Metropolitana,406.542,618,600,0,264,264,"0,65",3
+Castelo,Sul,37.803,45,44,40,9,49,31.12,3
+Colatina,Central Norte,119.992,336,356,40,9,49,"1,3",3
+Conceição da Barra,Central Norte,45.280,40,40,39,5,44,"0,97",3
+Conceição do Castelo,Metropolitana,17.482,26,23,26,10,36,01.01,3
+Divino de São Lourenço,Sul,5.803,7,5,7,1,8,"1,38",3
+Domingos Martins,Metropolitana,33.551,93,95,95,7,102,"1,38",3
+Dores do Rio Preto,Sul,7.803,8,10,6,0,6,"0,77",3
+Ecoporanga,Central Norte,25.314,23,19,21,4,25,"0,99",3
+Fundão,Metropolitana,21.194,11,11,21,4,25,"0,99",3
+Governador Lindenberg,Central Norte,11.620,9,10,11,0,11,1,3
+Guaçuí,Sul,24.603,26,25,26,7,33,31.12,3
+Guarapari,Metropolitana,124.656,59,59,58,12,70,31.12,3
+Ibatiba,Metropolitana,21.304,30,32,29,14,43,"2,02",3
+Ibiraçu,Metropolitana,12.890,21,20,19,9,28,"2,17",3
+Ibitirama,Sul,9.550,0,0,0,0,0,0,3
+Iconha,Sul,13.803,13,14,13,4,17,"1,23",3
+Irupi,Sul,12.403,13,13,14,2,16,31.12,3
+Itaguaçu,Metropolitana,14.320,20,23,21,9,30,"2,09",3
+Itapemirim,Sul,34.493,120,84,14,2,16,"1,29",3
+Itarana,Metropolitana,11.018,18,14,13,7,20,"1,82",3
+Iúna,Sul,23.403,25,24,24,6,30,"1,28",3
+Jaguaré,Central Norte,27.503,25,23,24,3,27,30.12,3
+Jerônimo Monteiro,Sul,11.803,13,15,12,3,15,"1,27",3
+João Neiva,Metropolitana,16.187,32,33,24,3,27,"0,98",3
+Laranja da Terra,Metropolitana,11.640,16,15,16,8,24,01.01,3
+Linhares,Central Norte,166.786,154,268,33,18,51,"0,31",3
+Mantenópolis,Central Norte,12.259,0,0,0,0,0,0,3
+Marataízes,Sul,39.203,45,45,42,10,52,31.12,3
+Marechal Floriano,Metropolitana,16.214,154,23,22,11,33,01.01,3
+Marilândia,Central Norte,11.402,10,10,7,1,8,"0,7",3
+Mimoso do Sul,Sul,26.803,31,30,31,6,37,"1,38",3
+Montanha,Central Norte,19.128,32,32,22,11,33,01.01,3
+Mucurici,Central Norte,7.803,7,5,8,0,8,"1,03",3
+Muniz Freire,Sul,17.351,34,30,31,6,37,"1,38",3
+Muqui,Sul,14.603,14,16,15,2,17,"1,16",3
+Nova Venécia,Central Norte,47.214,7,39,42,6,48,"1,02",3
+Pancas,Central Norte,22.814,20,19,19,3,22,"0,96",3
+Pedro Canário,Central Norte,26.503,23,23,21,3,24,"0,91",3
+Pinheiros,Central Norte,24.803,22,20,19,2,21,"0,85",3
+Piúma,Sul,24.603,30,28,28,6,34,"1,38",3
+Ponto Belo,Central Norte,8.904,8,7,6,1,7,30.12,3
+Presidente Kennedy,Sul,11.203,14,11,14,1,15,31.12,3
+Rio Bananal,Central Norte,18.519,26,26,28,31,34,31.12,3
+Rio Novo do Sul,Sul,12.603,16,15,15,4,19,"1,51",3
+Santa Leopoldina,Metropolitana,13.076,21,18,25,7,32,"2,45",3
+Santa Maria de Jetibá,Metropolitana,40.242,63,57,59,26,85,"2,11",3
+Santa Teresa,Metropolitana,24.390,38,38,35,15,50,"2,05",3
+São Domingos do Norte,Central Norte,9.203,9,6,7,0,7,"0,76",3
+São Gabriel da Palha,Central Norte,38.014,32,30,30,4,34,"0,89",3
+São José do Calçado,Sul,10.203,12,12,10,3,13,31.12,3
+São Mateus,Central Norte,131.491,117,115,111,20,131,1,3
+São Roque do Canaã,Central Norte,10.886,0,0,0,0,0,30.12,3
+Serra,Metropolitana,529.583,805,781,765,343,1108,"2,09",3
+Sooretama,Central Norte,26.503,22,23,17,0,17,"0,64",3
+Vargem Alta,Sul,17.803,18,18,21,5,26,"1,46",3
+Venda Nova do Imigrante,Metropolitana,25.330,61,64,69,15,84,"3,32",3
+Viana,Metropolitana,79.010,121,118,115,51,166,"2,1",3
+Vila Pavão,Central Norte,9.403,8,7,9,0,9,"0,96",3
+Vila Valério,Central Norte,13.728,0,0,0,0,0,0,3
+Vila Velha,Metropolitana,506.395,771,750,734,330,1064,"2,1",3
+Vitória,Metropolitana,358.267,1214,1088,1186,651,1837,"5,13",3`;
 
-        // Configurações globais Chart.js para o tema Health
+        // ---------- VARIÁVEIS GLOBAIS ----------
+        let vaxData = [], bedsData = [];
+        let stateVaxAvg = {}, stateBedsAvg = {};
+        let vaxChart1, vaxChart2, bedsChart1, bedsChart2;
+
+        // Configurações de tooltip e fonte
         Chart.defaults.font.family = 'Poppins, sans-serif';
         Chart.defaults.color = '#64748B';
-        Chart.defaults.scale.grid.color = 'rgba(0, 0, 0, 0.04)';
-
-        // Configuração de Tooltip Humanizado (Claro, suave)
         const customTooltip = {
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backgroundColor: 'rgba(255,255,255,0.95)',
             titleColor: '#334155',
             bodyColor: '#64748B',
             borderColor: 'rgba(0,0,0,0.05)',
             borderWidth: 1,
             padding: 12,
-            boxPadding: 6,
             usePointStyle: true,
-            titleFont: { size: 14, weight: '600' },
-            bodyFont: { size: 13 },
-            callbacks: {
-                label: function(context) {
-                    return ` ${context.dataset.label}: ${context.parsed.y}%`;
-                }
-            }
+            callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y}${ctx.dataset.label.includes('%') ? '%' : ''}` }
         };
 
-        function init() {
-            Papa.parse(rawCSV, {
-                header: true,
-                dynamicTyping: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    appData = results.data;
-                    calculateStateAverages();
-                    populateDatalist();
-                    updateDashboard('Visão Geral do Estado');
-                    
-                    document.getElementById('cityInput').addEventListener('input', (e) => {
-                        const city = e.target.value;
-                        if(city === '' || appData.some(d => d.municipio === city)) {
-                            updateDashboard(city === '' ? 'Visão Geral do Estado' : city);
-                        }
-                    });
+        // ---------- UTILITÁRIOS DE VIEW ----------
+        function showView(viewId) {
+            document.getElementById('landing-page').classList.add('hidden-dashboard');
+            document.getElementById('vaccination-dashboard').classList.add('hidden-dashboard');
+            document.getElementById('beds-dashboard').classList.add('hidden-dashboard');
+            document.getElementById(viewId).classList.remove('hidden-dashboard');
+        }
+
+        // ---------- PARSE DOS DADOS ----------
+        function parseNumber(str) {
+            if (str == null || str === '') return NaN;
+            let cleaned = String(str).replace(/\./g, '').replace(',', '.');
+            if (cleaned.includes('.')) return parseFloat(cleaned);
+            return parseInt(cleaned, 10);
+        }
+
+        // VACINAÇÃO
+        function loadVaccinationData() {
+            Papa.parse(rawVaxCSV, {
+                header: true, skipEmptyLines: true, dynamicTyping: true,
+                complete: (r) => {
+                    vaxData = r.data.filter(d => d.municipio);
+                    calculateVaxAverages();
+                    populateDatalist('cityListVax', vaxData);
+                    updateVaxDashboard('Visão Geral do Estado');
                 }
             });
         }
-
-        function calculateStateAverages() {
-            const metrics = ['populacao_2022', 'polio_2019', 'polio_2020', 'polio_2021', 'polio_2022', 
-                           'triplice_viral_2019', 'triplice_viral_2020', 'triplice_viral_2021', 'triplice_viral_2022', 'bcg_2022'];
-            
-            metrics.forEach(metric => {
-                let sum = 0, count = 0;
-                appData.forEach(row => {
-                    if (row[metric] != null && row[metric] !== '') {
-                        sum += row[metric];
-                        count++;
-                    }
-                });
-                stateAverages[metric] = metric === 'populacao_2022' ? sum : (sum / count).toFixed(1);
-            });
-            stateAverages.municipio = 'Visão Geral do Estado';
-            stateAverages.regiao_saude = 'Todas as Regiões';
-        }
-
-        function populateDatalist() {
-            const datalist = document.getElementById('cityList');
-            appData.sort((a,b) => a.municipio.localeCompare(b.municipio)).forEach(city => {
-                datalist.appendChild(new Option(city.municipio, city.municipio));
+        function calculateVaxAverages() {
+            const metrics = ['populacao_2022','polio_2019','polio_2020','polio_2021','polio_2022','triplice_viral_2019','triplice_viral_2020','triplice_viral_2021','triplice_viral_2022','bcg_2022'];
+            stateVaxAvg = { municipio: 'Visão Geral do Estado', regiao_saude: 'Todas as Regiões' };
+            metrics.forEach(m => {
+                let sum = 0, cnt = 0;
+                vaxData.forEach(r => { if (r[m] != null) { sum += r[m]; cnt++; } });
+                stateVaxAvg[m] = m.includes('populacao') ? sum : (sum/cnt);
             });
         }
-
-        function updateDashboard(cityName) {
-            const dataToShow = cityName === 'Visão Geral do Estado' ? stateAverages : appData.find(c => c.municipio === cityName);
-            if(!dataToShow) return;
-
-            document.getElementById('kpi-pop').textContent = dataToShow.populacao_2022.toLocaleString('pt-BR');
-            document.getElementById('kpi-region').textContent = `Região: ${dataToShow.regiao_saude}`;
-            
-            updateHumanizedCard('polio', dataToShow.polio_2022);
-            updateHumanizedCard('triplice', dataToShow.triplice_viral_2022);
-            updateHumanizedCard('bcg', dataToShow.bcg_2022);
-
-            renderEvolutionChart(dataToShow);
-            renderCurrentYearChart(dataToShow);
+        function updateVaxDashboard(cityName) {
+            const data = cityName === 'Visão Geral do Estado' ? stateVaxAvg : vaxData.find(c => c.municipio === cityName);
+            if(!data) return;
+            document.getElementById('kpi-pop').textContent = data.populacao_2022.toLocaleString('pt-BR');
+            document.getElementById('kpi-region').textContent = `Região: ${data.regiao_saude}`;
+            updateVaxCard('polio', data.polio_2022);
+            updateVaxCard('triplice', data.triplice_viral_2022);
+            updateVaxCard('bcg', data.bcg_2022);
+            renderVaxEvolutionChart(data);
+            renderVaxCurrentChart(data);
         }
-
-        function updateHumanizedCard(type, value) {
-            const valEl = document.getElementById(`kpi-${type}`);
-            const statusContainer = document.getElementById(`kpi-${type}-status`);
-            
-            if (value == null || value === '' || isNaN(value)) {
-                valEl.textContent = '--';
-                statusContainer.innerHTML = `<span class="text-xs font-medium px-3 py-1.5 rounded-full bg-slate-100 text-slate-500 flex items-center gap-1.5"><i class="ph ph-warning-circle"></i> Dados Indisponíveis</span>`;
-                return;
-            }
-
-            valEl.textContent = `${Number(value).toFixed(1)}%`;
-            
-            // Texto Humanizado baseado na meta de 95%
-            if (Number(value) >= 95) {
-                statusContainer.innerHTML = `<span class="text-xs font-medium px-3 py-1.5 rounded-full bg-health-mintLight text-emerald-700 flex items-center gap-1.5"><i class="ph ph-check-circle"></i> Ambiente Seguro</span>`;
-            } else if (Number(value) >= 80) {
-                statusContainer.innerHTML = `<span class="text-xs font-medium px-3 py-1.5 rounded-full bg-health-warningLight text-amber-700 flex items-center gap-1.5"><i class="ph ph-warning"></i> Atenção Necessária</span>`;
-            } else {
-                statusContainer.innerHTML = `<span class="text-xs font-medium px-3 py-1.5 rounded-full bg-health-coralLight text-rose-700 flex items-center gap-1.5"><i class="ph ph-shield-warning"></i> Risco Elevado</span>`;
-            }
+        function updateVaxCard(type, val) {
+            const el = document.getElementById(`kpi-${type}`);
+            const status = document.getElementById(`kpi-${type}-status`);
+            if (isNaN(val)) { el.textContent = '--'; status.innerHTML = '<span class="text-xs px-3 py-1.5 rounded-full bg-slate-100">Indisponível</span>'; return; }
+            el.textContent = `${val.toFixed(1)}%`;
+            let badge = '';
+            if (val >= 95) badge = '<span class="text-xs px-3 py-1.5 rounded-full bg-health-mintLight text-emerald-700"><i class="ph ph-check-circle"></i> Ambiente Seguro</span>';
+            else if (val >= 80) badge = '<span class="text-xs px-3 py-1.5 rounded-full bg-health-warningLight text-amber-700"><i class="ph ph-warning"></i> Atenção</span>';
+            else badge = '<span class="text-xs px-3 py-1.5 rounded-full bg-health-coralLight text-rose-700"><i class="ph ph-shield-warning"></i> Risco Elevado</span>';
+            status.innerHTML = badge;
         }
-
-        function renderEvolutionChart(data) {
+        function renderVaxEvolutionChart(data) {
             const ctx = document.getElementById('evolutionChart').getContext('2d');
-            if (evolutionChartInstance) evolutionChartInstance.destroy();
-
-            evolutionChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['2019', '2020', '2021', '2022'],
-                    datasets: [
-                        {
-                            label: 'Pólio',
-                            data: [data.polio_2019, data.polio_2020, data.polio_2021, data.polio_2022],
-                            borderColor: '#34D399',
-                            backgroundColor: 'rgba(52, 211, 153, 0.15)',
-                            borderWidth: 3,
-                            tension: 0.4,
-                            fill: true,
-                            pointBackgroundColor: '#fff',
-                            pointBorderColor: '#34D399',
-                            pointBorderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 6
-                        },
-                        {
-                            label: 'Tríplice Viral',
-                            data: [data.triplice_viral_2019, data.triplice_viral_2020, data.triplice_viral_2021, data.triplice_viral_2022],
-                            borderColor: '#60A5FA',
-                            backgroundColor: 'rgba(96, 165, 250, 0.15)',
-                            borderWidth: 3,
-                            tension: 0.4,
-                            fill: true,
-                            pointBackgroundColor: '#fff',
-                            pointBorderColor: '#60A5FA',
-                            pointBorderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 6
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } },
-                        tooltip: customTooltip
-                    },
-                    scales: {
-                        x: { grid: { display: false } },
-                        y: { min: 0, max: 100, border: { display: false }, ticks: { callback: val => val + "%" } }
-                    }
-                }
-            });
+            if (vaxChart1) vaxChart1.destroy();
+            vaxChart1 = new Chart(ctx, { type:'line', data: { labels: ['2019','2020','2021','2022'],
+                datasets: [
+                    { label: 'Pólio', data: [data.polio_2019, data.polio_2020, data.polio_2021, data.polio_2022], borderColor: '#34D399', backgroundColor: 'rgba(52,211,153,0.1)', tension:0.3, fill:true },
+                    { label: 'Tríplice Viral', data: [data.triplice_viral_2019, data.triplice_viral_2020, data.triplice_viral_2021, data.triplice_viral_2022], borderColor: '#60A5FA', backgroundColor: 'rgba(96,165,250,0.1)', tension:0.3 }
+                ]}, options: { responsive:true, maintainAspectRatio:false, plugins: { tooltip: customTooltip }, scales: { y: { min:0, max:100 } } } });
         }
-
-        function renderCurrentYearChart(data) {
+        function renderVaxCurrentChart(data) {
             const ctx = document.getElementById('currentYearChart').getContext('2d');
-            if (currentYearChartInstance) currentYearChartInstance.destroy();
+            if (vaxChart2) vaxChart2.destroy();
+            vaxChart2 = new Chart(ctx, { type:'bar', data: { labels: ['Pólio','Tríplice','BCG'], datasets: [{ data: [data.polio_2022, data.triplice_viral_2022, data.bcg_2022], backgroundColor: ['#34D399','#60A5FA','#FB7185'] }] },
+                options: { plugins: { tooltip: customTooltip }, scales: { y: { max:110 } } } });
+        }
 
-            // Plugin para desenhar a linha de segurança (meta 95%) de forma suave
-            const safeLinePlugin = {
-                id: 'safeLine',
-                beforeDraw: chart => {
-                    const { ctx, chartArea: { left, right }, scales: { y } } = chart;
-                    ctx.save();
-                    const yPos = y.getPixelForValue(95);
-                    ctx.beginPath();
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = 'rgba(52, 211, 153, 0.5)'; // Verde suave
-                    ctx.setLineDash([6, 6]);
-                    ctx.moveTo(left, yPos);
-                    ctx.lineTo(right, yPos);
-                    ctx.stroke();
-                    ctx.fillStyle = '#10B981';
-                    ctx.font = '11px Poppins';
-                    ctx.fillText('Meta de Segurança (95%)', right - 145, yPos - 8);
-                    ctx.restore();
-                }
-            };
-
-            currentYearChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Pólio', 'Tríplice Viral', 'BCG'],
-                    datasets: [{
-                        label: 'Taxa de Imunização',
-                        data: [data.polio_2022, data.triplice_viral_2022, data.bcg_2022],
-                        backgroundColor: ['#34D399', '#60A5FA', '#FB7185'],
-                        borderRadius: 8,
-                        borderSkipped: false,
-                        barPercentage: 0.5
-                    }]
-                },
-                plugins: [safeLinePlugin],
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: customTooltip
-                    },
-                    scales: {
-                        x: { grid: { display: false } },
-                        y: { 
-                            min: 0, max: 110, 
-                            border: { display: false },
-                            ticks: { callback: val => val + "%" } 
-                        }
-                    }
+        // LEITOS
+        function loadBedsData() {
+            Papa.parse(rawBedsCSV, { header: true, skipEmptyLines: true,
+                complete: (r) => {
+                    bedsData = r.data.map(row => {
+                        let pop = parseNumber(row['População (2022)']) || 0;
+                        let sus19 = parseNumber(row['Leitos SUS (2019)']) || 0;
+                        let sus21 = parseNumber(row['Leitos SUS (2021)']) || 0;
+                        let sus23 = parseNumber(row['Leitos SUS (2023)']) || 0;
+                        let naoSUS = parseNumber(row['Leitos Não SUS (2023)']) || 0;
+                        let total = parseNumber(row['Total Leitos (2023)']) || (sus23 + naoSUS);
+                        let leitosMil = parseFloat(String(row['Leitos/Mil Hab (2023)']).replace(',','.')) || (total / (pop/1000));
+                        return {
+                            municipio: row['Município'],
+                            regiao: row['Região de Saúde'],
+                            populacao: pop,
+                            sus2019: sus19, sus2021: sus21, sus2023: sus23,
+                            naoSUS2023: naoSUS,
+                            totalLeitos2023: total,
+                            leitosPorMil: isNaN(leitosMil) ? 0 : leitosMil,
+                            refOMS: 3
+                        };
+                    }).filter(d => d.municipio && d.populacao > 0);
+                    calculateBedsAverages();
+                    populateDatalist('cityListBeds', bedsData);
+                    updateBedsDashboard('Visão Geral do Estado');
                 }
             });
         }
+        function calculateBedsAverages() {
+            let sumTotal=0, sumMil=0, sumSus=0, cnt=0;
+            bedsData.forEach(d => { sumTotal += d.totalLeitos2023; sumMil += d.leitosPorMil; sumSus += d.sus2023; cnt++; });
+            stateBedsAvg = {
+                municipio: 'Visão Geral do Estado', regiao: 'Todas as Regiões', populacao: bedsData.reduce((a,b)=>a+b.populacao,0),
+                totalLeitos2023: sumTotal, leitosPorMil: sumMil/cnt, sus2023: sumSus, sus2019: bedsData.reduce((a,b)=>a+b.sus2019,0), sus2021: bedsData.reduce((a,b)=>a+b.sus2021,0)
+            };
+        }
+        function updateBedsDashboard(cityName) {
+            const data = cityName === 'Visão Geral do Estado' ? stateBedsAvg : bedsData.find(c => c.municipio === cityName);
+            if(!data) return;
+            document.getElementById('kpi-total-leitos').textContent = data.totalLeitos2023.toLocaleString();
+            document.getElementById('kpi-beds-region').textContent = `Região: ${data.regiao || data.regiao_saude || '—'}`;
+            const milHab = data.leitosPorMil;
+            document.getElementById('kpi-leitos-mil').textContent = milHab.toFixed(2);
+            const statusLeitos = document.getElementById('kpi-leitos-status');
+            if (milHab >= 3) statusLeitos.innerHTML = '<span class="text-xs px-3 py-1.5 rounded-full bg-health-mintLight text-emerald-700"><i class="ph ph-check"></i> Acima da meta OMS</span>';
+            else if (milHab >= 1.5) statusLeitos.innerHTML = '<span class="text-xs px-3 py-1.5 rounded-full bg-health-warningLight text-amber-700"><i class="ph ph-warning"></i> Abaixo do ideal</span>';
+            else statusLeitos.innerHTML = '<span class="text-xs px-3 py-1.5 rounded-full bg-health-coralLight text-rose-700"><i class="ph ph-shield-warning"></i> Crítico</span>';
+            
+            document.getElementById('kpi-sus-leitos').textContent = data.sus2023;
+            const susPercent = data.totalLeitos2023 ? ((data.sus2023/data.totalLeitos2023)*100).toFixed(1) : '0';
+            document.getElementById('kpi-sus-percent').textContent = `(${susPercent}%)`;
+            
+            const evol = data.sus2023 - data.sus2019;
+            document.getElementById('kpi-evolucao-sus').textContent = (evol>=0?'+':'') + evol;
+            document.getElementById('kpi-evolucao-status').innerHTML = evol>=0 ? '<span class="text-xs text-health-mint"><i class="ph ph-arrow-up"></i> Aumento</span>' : '<span class="text-xs text-health-coral"><i class="ph ph-arrow-down"></i> Redução</span>';
+            
+            renderBedsEvolutionChart(data);
+            renderBedsBarChart(data);
+            renderBedsTable();
+        }
+        function renderBedsEvolutionChart(data) {
+            const ctx = document.getElementById('bedsEvolutionChart').getContext('2d');
+            if (bedsChart1) bedsChart1.destroy();
+            bedsChart1 = new Chart(ctx, { type:'line', data: { labels: ['2019','2021','2023'],
+                datasets: [{ label: 'Leitos SUS', data: [data.sus2019, data.sus2021, data.sus2023], borderColor: '#60A5FA', backgroundColor: 'rgba(96,165,250,0.1)', tension:0.3 }] },
+                options: { plugins: { tooltip: customTooltip } } });
+        }
+        function renderBedsBarChart(data) {
+            const ctx = document.getElementById('bedsBarChart').getContext('2d');
+            if (bedsChart2) bedsChart2.destroy();
+            bedsChart2 = new Chart(ctx, { type:'bar', data: { labels: ['Leitos/mil hab'], datasets: [
+                { label: 'Atual', data: [data.leitosPorMil], backgroundColor: '#34D399' },
+                { label: 'Meta OMS (3,0)', data: [3], backgroundColor: '#CBD5E1' }
+            ]}, options: { plugins: { tooltip: customTooltip }, scales: { y: { beginAtZero: true } } } });
+        }
+        function renderBedsTable() {
+            const low = bedsData.filter(d => d.leitosPorMil < 1.0).sort((a,b)=>a.leitosPorMil - b.leitosPorMil).slice(0,8);
+            const html = `<table class="w-full text-sm"><thead><tr class="border-b"><th class="text-left py-2">Município</th><th>Leitos/mil</th><th>Total leitos</th></tr></thead><tbody>`+
+                low.map(d => `<tr class="border-b"><td class="py-2">${d.municipio}</td><td class="text-center">${d.leitosPorMil.toFixed(2)}</td><td class="text-center">${d.totalLeitos2023}</td></tr>`).join('')+
+                `</tbody></table>`;
+            document.getElementById('beds-table-container').innerHTML = low.length ? html : '<p class="text-health-textMuted">Nenhum município crítico.</p>';
+        }
 
-        window.addEventListener('DOMContentLoaded', init);
-    </script>
+        function populateDatalist(listId, dataArray) {
+            const dl = document.getElementById(listId);
+            dl.innerHTML = '';
+            dataArray.sort((a,b)=>a.municipio.localeCompare(b.municipio)).forEach(c => dl.appendChild(new Option(c.municipio, c.municipio)));
+        }
+
+        // Eventos de navegação
+        document.getElementById('go-to-vaccination').addEventListener('click', ()=> { showView('vaccination-dashboard'); });
+        document.getElementById('go-to-beds').addEventListener('click', ()=> { showView('beds-dashboard'); });
+        document.getElementById('back-from-vaccination').addEventListener('click', ()=> showView('landing-page'));
+        document.getElementById('back-from-beds').addEventListener('click', ()=> showView('landing-page'));
+
+        // Listeners de busca
+        document.getElementById('cityInputVax').addEventListener('input', e => {
+            const val = e.target.value;
+            if (val === '' || vaxData.some(d=>d.municipio===val)) updateVaxDashboard(val || 'Visão Geral do Estado');
+        });
+        document.getElementById('cityInputBeds').addEventListener('input', e => {
+            const val = e.target.value;
+            if (val === '' || bedsData.some(d=>d.municipio===val)) updateBedsDashboard(val || 'Visão Geral do Estado');
+        });
+
+        // Inicialização
+        window.addEventListener('DOMContentLoaded', () => {
+            loadVaccinationData();
+            loadBedsData();
+            showView('landing-page');
+        });
+    })();
+</script>
+<!-- RODAPÉ COM CRÉDITOS -->
+
+<footer class="max-w-7xl mx-auto mt-12 pt-6 border-t border-slate-200 text-center text-health-textMuted text-sm">
+
+    <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+
+        <span class="flex items-center gap-1"><i class="ph ph-user-circle text-base"></i> Kaynã Nunes</span>
+
+        <span class="w-1 h-1 rounded-full bg-slate-300 hidden sm:block"></span>
+
+        <span class="flex items-center gap-1"><i class="ph ph-user-circle text-base"></i> Carlos Henrique</span>
+
+        <span class="w-1 h-1 rounded-full bg-slate-300 hidden sm:block"></span>
+
+        <span class="flex items-center gap-1"><i class="ph ph-user-circle text-base"></i> João Gabriel</span>
+
+    </div>
+
+    <p class="text-xs mt-3 opacity-70">Portal de Saúde ES · Dados de vacinação e leitos · 2025</p>
+
+</footer>
 </body>
 </html>
